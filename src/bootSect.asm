@@ -1,40 +1,36 @@
 ;;;
-;;; Simple Boot Sector That Prints Characters Using BIOS Interrupts
+;;; Simple Boot Loader That Uses INT13 AH2 To Read From Disk Into Memory
 ;;;
 
 org 0x7c00                  ; 'Origin' of Boot Code; Helps Make Sure Addresses Don't Change
 
-;; Set Video Mode
-mov ah, 0x00                ; int 0x10 / ah 0x00 = Set Video Mode
-mov al, 0x03
-int 0x10
+;; Set Up ES:BX Memory Address / Segment; Offset To Load Sector(s) Into
+mov bx, 0x1000              ; Load Sector To Memory Address 0x1000
+mov es, bx
+mov bx, 0x0                 ; ES:BX = 0x1000:0x0
 
-;; Change Color / Palette
-mov ah, 0x0B
-mov bh, 0x00
-mov bl, 0x01
-int 0x10
+;; Set Up Disk Load
+mov dh, 0x0                 ; Head 0
+mov dl, 0x0                 ; Drive 0
+mov ch, 0x0                 ; Cylinder 0
+mov cl, 0x02                ; Starting Sector To Read From Disk
 
-;; Teletype Output Strings
-mov bx, version             ; Moving Memory Address at 'string' Into BX Register
+read_disk:
+    mov ah, 0x02            ; BIOS INT 13 / AH = 2 Read Disk Sectors
+    mov al, 0x01            ; # Of Sectors To Read
+    int 0x13                ; BIOS Interrupts For Disk Functions
 
-call print_string           ; Prints String In BX
-mov bx, hex_test
-call print_string
+    jc read_disk            ; Retry If Disk Read Error (Carry Flag Set/ = 1)
 
-mov dx, 0x12AB              ; Sample Hex Number
-call print_hex
+    ;; Reset Segment Registers For RAM
+    mov ax, 0x1000
+    mov ds, ax              ; Data Segment
+    mov es, ax              ; Extra Segment
+    mov fs, ax              ; ""
+    mov gs, ax              ; ""
+    mov ss, ax              ; Stack Segment
 
-;; End pgn
-jmp $                       ; Keep Jumping to Here; Neverending Loop
-
-;; Included Files
-include 'print_string.asm'
-include 'print_hex.asm'
-
-;; Variables
-version: db 0xA, 0xD, '  [Microbit Version 0.1.0-pre2]', 0xA, 0xD, 0
-hex_test: db '  Hex Test: ', 0
+    jmp 0x1000:0x0          ; Never Return From This!
 
 ;; Boot Sector Magic
 times 510-($-$$) db 0       ; Pad File With 0s Until 510th Byte

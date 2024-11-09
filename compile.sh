@@ -8,5 +8,7 @@ bold_red='\033[1;31m'
 echo -e "${bold_blue}[INFO] Compiling...${default}"
 cd src
 fasm bootSect.asm
+fasm kernel.asm
+cat bootSect.bin kernel.bin > system.bin
 echo -e "${bold_green}[INFO] Successfully compiled!${default}"
 exit 0
