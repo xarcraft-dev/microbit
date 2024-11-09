@@ -1,0 +1,8 @@
+# Binary Files
+*.bin
+
+# Visual Studio Code Settings
+.vscode/
+
+# Shell Settings
+cp.sh
