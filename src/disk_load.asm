@@ -1,5 +1,5 @@
 ;;;
-;;; Disk Load: Read DH Sectors Into ES:BX Memory Location From Drive DL
+;;; disk_load.asm: Read DH Sectors Into ES:BX Memory Location From Drive DL
 ;;;
 
 disk_load:

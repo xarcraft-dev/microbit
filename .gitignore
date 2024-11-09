@@ -1,5 +1,5 @@
 # Binary Files
-*.bin
+bin/
 
 # Visual Studio Code Settings
 .vscode/
