@@ -1,6 +1,6 @@
-;;;
+;;; ==========================================================================================================
 ;;; disk_load.asm: Read DH Sectors Into ES:BX Memory Location From Drive DL
-;;;
+;;; ==========================================================================================================
 
 disk_load:
     push dx                     ; Store DX On Stack So We Can Check Number Of Sectors Actually Read Later
@@ -25,6 +25,7 @@ disk_error:
     call print_string
     hlt
     
-
+;; =====================================================
 ;; Variables
+;; =====================================================
 DISK_ERROR_MSG: db 'Disk read error!', 0
