@@ -4,17 +4,6 @@
 
 org 0x7c00                  ; 'Origin' of Boot Code; Helps Make Sure Addresses Don't Change
 
-;; Set Video Mode
-mov ah, 0x00                ; int 0x10 / ah 0x00 = Set Video Mode
-mov al, 0x03
-int 0x10
-
-;; Change Color / Palette
-mov ah, 0x0B
-mov bh, 0x00
-mov bl, 0x01
-int 0x10
-
 ;; Read File Table Into Memory First
 ;; Set Up ES:BX Memory Address / Segment; Offset To Load Sector(s) Into
 mov bx, 0x1000              ; Load Sector To Memory Address 0x1000
@@ -48,7 +37,7 @@ read_disk_1000:
 
 read_disk_2000:
     mov ah, 0x02             ; BIOS INT 13 / AH = 2 Read Disk Sectors
-    mov al, 0x01             ; # Of Sectors To Read
+    mov al, 0x02             ; # Of Sectors To Read
     int 0x13                 ; BIOS Interrupts For Disk Functions
 
     jc read_disk_2000        ; Retry If Disk Read Error
