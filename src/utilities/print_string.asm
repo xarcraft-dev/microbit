@@ -1,19 +1,20 @@
 ;;;
-;;; Prints Character Strings in BX Register
+;;; Prints Strings in SI Register
 ;;;
 
 print_string:
-    pusha                   ; Store All Register Values Onto The Stack
-    mov ah, 0x0e            ; int 10 / ah 0x0e BIOS Teletype Output
+    pusha                   ; Store All Registers Onto Stack
+    mov ah, 0x0e            ; INT 10 / AH 0x0e BIOS Teletype Output
+    mov bh, 0x0             ; Page Number
+    mov bl, 0x07            ; Color
 
 print_char:
-    mov al, [bx]            ; Move Character Value at Addres in BX Into AL
+    lodsb                  ; Move Character Value At Address In BX Into AL
     cmp al, 0
     je end_print            ; Jump If Equal (AL = 0) To Halt Label
-    int 0x10                ; Print Character in AL
-    add bx, 1               ; Move 1 Byte Forward / Get Next Character
+    int 0x10                ; Print Character In AL
     jmp print_char          ; Loop
 
 end_print:
-    popa                    ; Restore Registers From The Stack Before Returning
+    popa                    ; Restore All Registers From The Stack
     ret
