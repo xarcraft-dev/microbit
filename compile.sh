@@ -11,6 +11,7 @@ cd src
 fasm bootSect.asm ../bin/bootSect.bin
 fasm kernel.asm ../bin/kernel.bin
 fasm fileTable.asm ../bin/fileTable.bin
-cat ../bin/bootSect.bin ../bin/fileTable.bin ../bin/kernel.bin > ../bin/system.bin
+fasm calculator.asm ../bin/calculator.bin
+cat ../bin/bootSect.bin ../bin/fileTable.bin ../bin/kernel.bin ../bin/calculator.bin > ../bin/system.bin
 echo -e "${bold_green}[INFO] Successfully compiled!${default}"
 exit 0

@@ -45,7 +45,7 @@ read_disk_1000:
 
 read_disk_2000:
     mov ah, 0x02             ; BIOS INT 13 / AH = 2 Read Disk Sectors
-    mov al, 0x02             ; # Of Sectors To Read
+    mov al, 0x04             ; # Of Sectors To Read
     int 0x13                 ; BIOS Interrupts For Disk Functions
 
     jc read_disk_2000        ; Retry If Disk Read Error

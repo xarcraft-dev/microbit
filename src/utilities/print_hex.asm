@@ -23,7 +23,7 @@ hex_loop:
     add al, 0x30                ; Get ASCII Number Or Letter Value
     cmp al, 0x39                ; Is Hex Value 0-9 (<= 0x39) or A-F (> 0x39)
     jle move_into_BX
-    add al, 0x7                 ; To Get ASCII 'A'-'F'
+    add al, 0x07                ; To Get ASCII 'A'-'F'
 
 move_into_BX:
     ;; =====================================================
