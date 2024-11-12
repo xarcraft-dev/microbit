@@ -79,48 +79,79 @@ file_table:
 
     ;; Load File Table String From Its Memory Location (0x1000), Print File
     ;; And Program Names & Sector Numbers To Screen, For User To Choose
-    xor cx, cx                  ; Reset Counter For # Chars In File/Pgm Name
+    xor cx, cx                  ; Reset Counter For # Of Bytes At Current 'fileTable' Entry
     mov ax, 0x1000              ; File Table Location
     mov es, ax                  ; ES = 0x1000
     xor bx, bx                  ; ES:BX = 0x1000:0
     mov ah, 0x0e                ; Get Ready To Print To Screen
 
-file_table_loop:
+file_name_loop:
+    mov al, [ES:BX]
+    cmp al, 0                   ; Is The File Name Null? At End Of File Table?
+    je get_program_name         ; If So, Stop Reading The File Table
+
+    int 0x10                    ; Otherwise Print Character In AL To Screen
+    cmp cx, 9                   ; If At End Of Name, Go On
+    je get_file_extension
+    inc cx                      ; Increment File Entry Byte Counter
+    inc bx                      ; Get Next Byte At File Table
+    jmp file_name_loop
+
+get_file_extension:
+    ;; 2 Blanks Before File Extension
+    mov cx, 2
+    call print_blanks
+
     inc bx
     mov al, [ES:BX]
-    cmp al, '}'                 ; At End Of File Table?
-    je get_program_name
-    cmp al, '-'                 ; At Secor Number Of Element?
-    je sector_number_loop
-    cmp al, ','                 ; Between Table Element
-    je next_element
-    inc cx
     int 0x10
-    jmp file_table_loop
-
-sector_number_loop:
-    cmp cx, 21
-    je file_table_loop
-    mov al, ' '
+    inc bx
+    mov al, [ES:BX]
     int 0x10
-    inc cx
-    jmp sector_number_loop
+    inc bx
+    mov al, [ES:BX]
+    int 0x10
 
-next_element:
-    xor cx, cx              ; Reset Counter
+get_dir_entry_number:
+    ;; 9 Blanks Before Entry #
+    mov cx, 9
+    call print_blanks
+
+    inc bx
+    mov al, [ES:BX]
+    call print_hex_as_ascii
+
+get_start_sector:
+    ;; 9 Blanks Before Starting Sector
+    mov cx, 9
+    call print_blanks
+
+    inc bx
+    mov al, [ES:BX]
+    call print_hex_as_ascii
+
+get_file_size:
+    ;; 13 Blanks Before File Size
+    mov cx, 14
+    call print_blanks
+
+    inc bx
+    mov al, [ES:BX]
+    call print_hex_as_ascii
     mov al, 0xA
     int 0x10
     mov al, 0xD
     int 0x10
-    mov al, 0x20
-    int 0x10
-    mov al, 0x20
-    int 0x10
-    jmp file_table_loop
+
+    inc bx                  ; Get First Byte Of Next File Name
+    xor cx, cx              ; Reset Counter For Next File Name
+    jmp file_name_loop
 
 ;; ============================================================================
 ;; After File Table Printed To Screen, User Can Input Program To Load
 ;; ============================================================================
+
+;; TODO: Change To Accomadate New File Table Layout
 
 get_program_name:
     mov ah, 0x0e
@@ -131,7 +162,7 @@ get_program_name:
     mov byte [commandLength], 0
 
 program_loop:
-    mov ax, 0x00            ; AH = 0x00, AL = 0x00
+    xor ax, ax              ; AH = 0x00, AL = 0x00
     int 0x16                ; BIOS Int Get Keystroke AH = 0, Character Goes Into AL
 
     mov ah, 0x0e
@@ -150,13 +181,13 @@ start_search:
 
 check_next_char:
     mov al, [ES:BX]         ; Get File Table Char
-    cmp al, '}'             ; At End Of File Table?
+    cmp al, 0               ; At End Of File Table?
     je program_not_found    ; If Yes, Program Was Not Found
 
     cmp al, [di]            ; Does User Input Match File Table Character
     je start_compare
 
-    inc bx                  ; If Not, Get Next Char In File Table And Recheck
+    add bx, 16              ; If Not, Go To Next File Entry In The File Table
     jmp check_next_char
 
 start_compare:
@@ -193,51 +224,26 @@ program_not_found:
     je file_table
     jmp file_table_end      ; Else Go Back To Main Menu
 
+;; =============================================================================
+;; Read Disk Sector Of Program To Memory And Execute It By Far Jumping
+;; =============================================================================
+
 found_program:
+    add bx, 4               ; Go To Starting Sector # In File Table Entry
+    mov cl, [ES:BX]         ; Sector Number To Start Reading At
     inc bx
-    mov cl, 10              ; Use To Get Sector Number
-    xor al, al              ; Reset AL To 0
+    mov bl, [ES:BX]         ; File Size In Sectors / # Of Sectors To Read
 
-next_sector_number:
-    mov dl, [ES:BX]         ; Checking Next Byte Of File Table
-    inc bx
-    cmp dl, ','             ; At End Of Sector Number?
-    je load_program         ; If So, Load Program From That Sector
-    cmp dl, 48              ; Else, Check If AL is '0' - '9' In ASCII
-    jl sector_not_found     ; Before '0', Not A Number
-    cmp dl, 57
-    jg sector_not_found     ; After '9', Not A Number
-    sub dl, 48              ; Covert ASCII Character Into Integer
-    mul cl                  ; AL * CL (AL * 10), Result In AH / AL (AX)
-    add al, dl              ; AL = AL + DL
-    jmp next_sector_number
-
-sector_not_found:
-    mov si, sectorNotFound  ; Did Not Find Program Name In File Table
-    call print_string
-    mov ah, 0x00            ; Get Keystroke, Print To Screen
-    int 0x16
-    mov ah, 0x0e
-    int 0x10
-    cmp al, 'Y'
-    je file_table           ; Reload File Browser Screen To Search Again
-    cmp al, 'y'
-    je file_table
-    jmp file_table_end      ; Else Go Back To Main Menu
-
-load_program:
-    mov cl, al              ; CL = Sector # To Start Loading / Reading At
-
-    mov ah, 0x00            ; INT 13H AH 0 = Reset Disk System
-    mov dl, 0x00
-    int 0x13
+    xor ax, ax
+    mov dl, 0x00            ; Disk #
+    int 0x13                ; INT 13h / AH = 0 Reset Disk System
 
     mov ax, 0x8000          ; Memory Location To Load Program To
     mov es, ax
+    mov al, bl              ; # Of Sectors To Read
     xor bx, bx              ; ES:BX -> 0x8000:0x0000
 
-    mov ah, 0x02            ; INT 13 AH 02 = Read Disk Sectors To Memory
-    mov al, 0x01            ; # Of Sectors To Read
+    mov ah, 0x02            ; INT 13 / AH 02 = Read Disk Sectors To Memory
     mov ch, 0x00            ; Track #
     mov dh, 0x00            ; Head #
     mov dl, 0x00            ; Drive #
@@ -346,13 +352,14 @@ end_program:
 include 'utilities/print_string.asm'
 include 'utilities/print_hex.asm'
 include 'utilities/print_registers.asm'
+include 'utilities/print_blanks.asm'
 include 'screen/resetTextScreen.asm'
 include 'screen/resetGraphicsScreen.asm'
 
 ;; =====================================================
 ;; Variables
 ;; =====================================================
-versionText:            db 0xA, 0xD, 0xA, 0xD, '  Microbit [Version 0.1.1-rc1]', 0xA, 0xD, 0
+versionText:            db 0xA, 0xD, 0xA, 0xD, '  Microbit [Version 0.1.1 Test Build 1]', 0xA, 0xD, 0
 welcomeText:            db '  Kernel Booted, Welcome To Microbit OS!', 0xA, 0xD, 0xA, 0xD, 0xA, 0xD, 0
 menuText:               db '  Commands:', 0xA, 0xD, '  F) File & Program Browser / Loader', \
                         0xA, 0xD, '  N) End Program', 0xA, 0xD, '  R) Reboot', 0xA, 0xD, \
@@ -360,7 +367,8 @@ menuText:               db '  Commands:', 0xA, 0xD, '  F) File & Program Browser
                         0xA, 0xD, 0xA, 0xD, '  > ', 0
 commandFailure:         db 0xA, 0xD, '  Oops! Something went wrong :(', 0xA, 0xD, 0xA, 0xD, '  > ', 0
 endProgramText:         db 0xA, 0xD, '  Ending Program...', 0
-fileTableHeading:       db 0xA, 0xD, 0xA, 0xD, '  File/Program         Sector #', 0xA, 0xD, 0xA, 0xD, '  ', 0
+fileTableHeading:       db 0xA, 0xD, 0xA, 0xD, '  File Name   Extension   Entry #   Start Sector   Size (sectors)', \
+                        0xA, 0xD, 0xA, 0xD, '  ', 0
 printRegisterHeading:   db 0xA, 0xD, 0xA, 0xD, '  Register Memory Location', 0xA, 0xD, 0
 goBackMessage:          db 0xA, 0xD, 0xA, 0xD, '  Press any key to go back...', 0
 programFailure:         db 0xA, 0xD, 0xA, 0xD, '  Program Not Found! Try again? (Y)', 0xA, 0xD, '  > ', 0
@@ -373,4 +381,4 @@ commandLength:          db 0
 ;; =====================================================
 ;; Sector Padding Magic
 ;; =====================================================
-times 1536-($-$$) db 0       ; Pad File With 0s Until 1024th Byte
+times 1536-($-$$) db 0       ; Pad File With 0s Until The End Of Sector

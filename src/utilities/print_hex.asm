@@ -23,7 +23,7 @@ hex_loop:
     add al, 0x30                ; Get ASCII Number Or Letter Value
     cmp al, 0x39                ; Is Hex Value 0-9 (<= 0x39) or A-F (> 0x39)
     jle move_into_BX
-    add al, 0x07                ; To Get ASCII 'A'-'F'
+    add al, 0x7                 ; To Get ASCII 'A'-'F'
 
 move_into_BX:
     ;; =====================================================
@@ -43,6 +43,17 @@ end_hexloop:
 
     popa                        ; Restore All Registers From The Stack
     ret                         ; Return To Caller
+
+;; Small Routine To Convert Hex To ASCII
+print_hex_as_ascii:
+    mov ah, 0x0e
+    add al, 0x30                ; Convert To ASCII Number
+    cmp al, 0x39                ; Is Value 0h-9h or A-F
+    jle hexNumber
+    add al, 0x7                 ; Add Hex 7 To Get ASCII 'A' - 'F'
+hexNumber:
+    int 0x10
+    ret
 
 ;; =====================================================
 ;; Data
