@@ -352,7 +352,7 @@ include 'screen/resetGraphicsScreen.asm'
 ;; =====================================================
 ;; Variables
 ;; =====================================================
-versionText:            db 0xA, 0xD, 0xA, 0xD, '  Microbit [Version 0.1.0]', 0xA, 0xD, 0
+versionText:            db 0xA, 0xD, 0xA, 0xD, '  Microbit [Version 0.1.1-rc1]', 0xA, 0xD, 0
 welcomeText:            db '  Kernel Booted, Welcome To Microbit OS!', 0xA, 0xD, 0xA, 0xD, 0xA, 0xD, 0
 menuText:               db '  Commands:', 0xA, 0xD, '  F) File & Program Browser / Loader', \
                         0xA, 0xD, '  N) End Program', 0xA, 0xD, '  R) Reboot', 0xA, 0xD, \
