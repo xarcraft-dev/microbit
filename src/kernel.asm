@@ -142,6 +142,10 @@ get_file_size:
     int 0x10
     mov al, 0xD
     int 0x10
+    mov al, 0x20
+    int 0x10
+    mov al, 0x20
+    int 0x10
 
     inc bx                  ; Get First Byte Of Next File Name
     xor cx, cx              ; Reset Counter For Next File Name
@@ -359,7 +363,7 @@ include 'screen/resetGraphicsScreen.asm'
 ;; =====================================================
 ;; Variables
 ;; =====================================================
-versionText:            db 0xA, 0xD, 0xA, 0xD, '  Microbit [Version 0.1.1 Test Build 1]', 0xA, 0xD, 0
+versionText:            db 0xA, 0xD, 0xA, 0xD, '  Microbit [Version 0.1.1 Test Build 2]', 0xA, 0xD, 0
 welcomeText:            db '  Kernel Booted, Welcome To Microbit OS!', 0xA, 0xD, 0xA, 0xD, 0xA, 0xD, 0
 menuText:               db '  Commands:', 0xA, 0xD, '  F) File & Program Browser / Loader', \
                         0xA, 0xD, '  N) End Program', 0xA, 0xD, '  R) Reboot', 0xA, 0xD, \
