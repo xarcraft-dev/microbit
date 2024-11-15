@@ -14,10 +14,10 @@
 ;;; =============================================================================================
 
 ;;; Files
-db 'bootSect  ', 'bin', 00h, 01h, 01h, \            ; Boot Sector
-'kernel    ', 'bin', 00h, 02h, 03h, \          ; Kernel
+db 'bootSect  ', 'bin', 00h, 01h, 01h, \             ; Boot Sector
+'kernel    ', 'bin', 00h, 02h, 03h, \                ; Kernel
 'fileTable ', 'txt', 00h, 05h, 01h, \                ; File Table
-'calculator', 'bin', 00h, 06h, 01h                     ; Calculator
+'calculator', 'bin', 00h, 06h, 01h                   ; Calculator
 
 ;; Sector Padding Magic
-times 512-($-$$) db 0   ; Pad Rest Of File To 0s Until 512th Byte / End Of Sector
+times 512-($-$$) db 0                                ; Pad Rest Of File To 0s Until 512th Byte / End Of Sector

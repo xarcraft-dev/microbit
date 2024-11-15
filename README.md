@@ -12,6 +12,16 @@ And this is a graphics test which prints a 50x50 green square to the screen. The
 
 ![image](https://github.com/user-attachments/assets/d4478597-333b-4977-9bc3-af0948c3b849)
 
+## Running
+
+First, clone this repository with `git clone https://github.com/xarcraft-dev/microbit.git`.
+
+Then extract the zip file and go inside the extracted folder.
+
+After that, type `chmod +x install.sh` to give access for installing Microbit. To install Microbit, run `./install.sh`.
+
+That will install and run the operating system. To run the operating system normally, type `./run.sh`.
+
 ## Contributing
 
 Feel free to contribute and create pull requests. I will try answering all of them.

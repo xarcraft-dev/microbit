@@ -63,7 +63,16 @@ run_command:
     je end_program
     cmp al, 'n'
     je end_program
+    cmp al, ' '
+    je leave_blank
+    cmp al, 0x00
+    je leave_blank
     mov si, commandFailure  ; Command Not Found
+    call print_string
+    jmp get_input
+
+leave_blank:
+    mov si, input
     call print_string
     jmp get_input
 
@@ -370,13 +379,14 @@ menuText:               db '  Commands:', 0xA, 0xD, '  F) File & Program Browser
                         '  P) Print Register Values', 0xA, 0xD, '  G) Graphics Mode Test', \
                         0xA, 0xD, 0xA, 0xD, '  > ', 0
 commandFailure:         db 0xA, 0xD, '  Oops! Something went wrong :(', 0xA, 0xD, 0xA, 0xD, '  > ', 0
+input:                  db 0xA, 0xD, '  > ', 0
 endProgramText:         db 0xA, 0xD, '  Ending Program...', 0
 fileTableHeading:       db 0xA, 0xD, 0xA, 0xD, '  File Name   Extension   Entry #   Start Sector   Size (sectors)', \
                         0xA, 0xD, 0xA, 0xD, '  ', 0
 printRegisterHeading:   db 0xA, 0xD, 0xA, 0xD, '  Register Memory Location', 0xA, 0xD, 0
 goBackMessage:          db 0xA, 0xD, 0xA, 0xD, '  Press any key to go back...', 0
 programFailure:         db 0xA, 0xD, 0xA, 0xD, '  Program Not Found! Try again? (Y)', 0xA, 0xD, '  > ', 0
-pgmNotLoaded:           db 0xA, 0xD, 0xA, 0xD, '  Error! Program Not Loaded, Try Again.', 0xA, 0xD, 0
+pgmNotLoaded:           db 0xA, 0xD, 0xA, 0xD, '  Error! Program Not Loaded, Press Any Key To Try Again...', 0
 sectorNotFound:         db 0xA, 0xD, 0xA, 0xD, '  Error! Secor Number Not Found! Try Again? (Y)', 0xA, 0xD, '  > ', 0
 getProgramName:         db 0xA, 0xD, 0xA, 0xD, '  Enter Program Name: ', 0
 commandString:          db ' ', 0

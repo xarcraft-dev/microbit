@@ -6,3 +6,6 @@ bin/
 
 # Shell Settings
 cp.sh
+
+# Auto Generated Files
+system.ini
