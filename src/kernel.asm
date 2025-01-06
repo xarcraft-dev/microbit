@@ -19,67 +19,88 @@ main_menu:
     mov si, welcomeText         ; Print The Welcome Text
     call print_string
 
-    mov si, menuText            ; Print The Menu Text
-    call print_string
-
 ;; =============================================================================
 ;; Get User Input, Print To Screen & Choose Menu Option Or Run Command
 ;; =============================================================================
 
 get_input:
-    mov di, commandString   ; DI Now Pointing To 'commandString' 
+    mov si, prompt          ; Print The Prompt Text
+    call print_string
+    xor cx, cx              ; Reset Byte Counter Of Input
+    mov si, commandString   ; SI Now Pointing To commandString
+
+    mov ax, 0x2000          ; Reset ES & DS Segments To Kernel Area
+    mov es, ax
+    mov ds, ax
+
 keyloop:
-    mov ax, 0x00            ; AH = 0x00, AL = 0x00
+    xor ax, ax              ; AH = 0x0, AL = 0x0
     int 0x16                ; BIOS Int Get Keystroke AH = 0, Character Goes Into AL
 
     mov ah, 0x0e
     cmp al, 0xD             ; Did User Press 'Enter' Key?
     je run_command
-    int 0x10                ; If Not, Print Input Character To Screen
-    mov [di], al            ; Store Input Character To String
-    inc di                  ; Go To Next Byte At DI / 'commandString'
+
+    int 0x10                ; Else Print Input Character To Screen
+    mov [si], al            ; Store Input Character To String
+    inc cx                  ; Increment Byte Counter of Input
+    inc si                  ; Go To Next Byte At DI / commandString
     jmp keyloop             ; Loop For Next Character From User
 
 run_command:
-    mov byte [di], 0        ; Null Terminate 'commandString' From Dı
-    mov al, [commandString]
-    cmp al, 'F'             ; File Table Command / Menu Option
-    je file_table
-    cmp al, 'f'
-    je file_table
-    cmp al, 'R'             ; Warm Reboot Option
-    je reboot
-    cmp al, 'r'
-    je reboot
-    cmp al, 'P'             ; Print Register Values
-    je print_registers_command
-    cmp al, 'p'
-    je print_registers_command
-    cmp al, 'G'             ; Graphics Mode Test
-    je graphics_test
-    cmp al, 'g'
-    je graphics_test
-    cmp al, 'N'             ; E(n)d Our Current Program
-    je end_program
-    cmp al, 'n'
-    je end_program
-    cmp al, ' '
-    je leave_blank
-    cmp al, 0x00
-    je leave_blank
-    mov si, commandFailure  ; Command Not Found
-    call print_string
-    jmp get_input
+    cmp cx, 0
+    je get_input            ; Handle Empty Input
 
-leave_blank:
-    mov si, input
+    mov byte [si], 0        ; Else Null Terminate commandString From DI
+    mov si, commandString   ; Reset SI To Point To Start Of User Input
+
+check_commands:
+    push cx
+    mov di, cmdDir
+    repe cmpsb
+    je file_browser
+
+    pop cx
+    push cx
+    mov di, cmdReboot
+    mov si, commandString
+    repe cmpsb
+    je reboot
+
+    pop cx
+    push cx
+    mov di, cmdReg
+    mov si, commandString
+    repe cmpsb
+    je print_registers_command
+
+    pop cx
+    push cx
+    mov di, cmdGfx
+    mov si, commandString
+    repe cmpsb
+    je graphics_test
+
+    pop cx
+    push cx
+    mov di, cmdHlt
+    mov si, commandString
+    repe cmpsb
+    je end_program
+
+    pop cx
+
+check_files:
+
+not_found:
+    mov si, commandFailure  ; Command Not Found
     call print_string
     jmp get_input
 
 ;; =====================================================
 ;; F) File Table
 ;; =====================================================
-file_table:
+file_browser:
     ;; Reset Screen State
     call resetTextScreen
 
@@ -232,10 +253,10 @@ program_not_found:
     mov ah, 0x0e
     int 0x10
     cmp al, 'Y'
-    je file_table           ; Reload File Table Screen To Search Again
+    je file_browser           ; Reload File Table Screen To Search Again
     cmp al, 'y'
-    je file_table
-    jmp file_table_end      ; Else Go Back To Main Menu
+    je file_browser
+    jmp file_browser_end      ; Else Go Back To Main Menu
 
 ;; =============================================================================
 ;; Read Disk Sector Of Program To Memory And Execute It By Far Jumping
@@ -268,7 +289,7 @@ found_program:
     call print_string
     mov ah, 0x00
     int 0x16
-    jmp file_table          ; Reload File Table
+    jmp file_browser          ; Reload File Table
 
 program_loaded:
     mov ax, 0x8000          ; Program Loaded, Set Segment Registers To Location
@@ -279,7 +300,7 @@ program_loaded:
     mov ss, ax
     jmp 0x8000:0x0000       ; Far Jump To Program
 
-file_table_end:
+file_browser_end:
     mov si, goBackMessage   ; Show Go Back Message
     call print_string
     mov ah, 0x00            ; Get Keystroke
@@ -372,14 +393,10 @@ include 'screen/resetGraphicsScreen.asm'
 ;; =====================================================
 ;; Variables
 ;; =====================================================
-versionText:            db 0xA, 0xD, 0xA, 0xD, '  Microbit [Version 0.1.1 Test Build 2]', 0xA, 0xD, 0
-welcomeText:            db '  Kernel Booted, Welcome To Microbit OS!', 0xA, 0xD, 0xA, 0xD, 0xA, 0xD, 0
-menuText:               db '  Commands:', 0xA, 0xD, '  F) File & Program Browser / Loader', \
-                        0xA, 0xD, '  N) End Program', 0xA, 0xD, '  R) Reboot', 0xA, 0xD, \
-                        '  P) Print Register Values', 0xA, 0xD, '  G) Graphics Mode Test', \
-                        0xA, 0xD, 0xA, 0xD, '  > ', 0
-commandFailure:         db 0xA, 0xD, '  Oops! Something went wrong :(', 0xA, 0xD, 0xA, 0xD, '  > ', 0
-input:                  db 0xA, 0xD, '  > ', 0
+versionText:            db 0xA, 0xD, 0xA, 0xD, '  Microbit [Version 0.1.1-rc2]', 0xA, 0xD, 0
+welcomeText:            db '  Kernel Booted, Welcome To Microbit OS!', 0xA, 0xD, 0
+commandFailure:         db 0xA, 0xD, '  Command not found!', 0xA, 0xD, 0
+prompt:                 db 0xA, 0xD, '  > ', 0
 endProgramText:         db 0xA, 0xD, '  Ending Program...', 0
 fileTableHeading:       db 0xA, 0xD, 0xA, 0xD, '  File Name   Extension   Entry #   Start Sector   Size (sectors)', \
                         0xA, 0xD, 0xA, 0xD, '  ', 0
@@ -387,9 +404,16 @@ printRegisterHeading:   db 0xA, 0xD, 0xA, 0xD, '  Register Memory Location', 0xA
 goBackMessage:          db 0xA, 0xD, 0xA, 0xD, '  Press any key to go back...', 0
 programFailure:         db 0xA, 0xD, 0xA, 0xD, '  Program Not Found! Try again? (Y)', 0xA, 0xD, '  > ', 0
 pgmNotLoaded:           db 0xA, 0xD, 0xA, 0xD, '  Error! Program Not Loaded, Press Any Key To Try Again...', 0
+
+cmdDir:                 db 'dir', 0
+cmdReboot:              db 'reboot', 0
+cmdReg:                 db 'reg', 0
+cmdGfx:                 db 'gfx', 0
+cmdHlt:                 db 'hlt', 0
+
 sectorNotFound:         db 0xA, 0xD, 0xA, 0xD, '  Error! Secor Number Not Found! Try Again? (Y)', 0xA, 0xD, '  > ', 0
 getProgramName:         db 0xA, 0xD, 0xA, 0xD, '  Enter Program Name: ', 0
-commandString:          db ' ', 0
+commandString:          db '', 0
 commandLength:          db 0
 
 ;; =====================================================
