@@ -44,11 +44,11 @@ read_disk_1000:
     mov cl, 0x03            ; Starting Sector To Read From Disk
 
 read_disk_2000:
-    mov ah, 0x02             ; BIOS INT 13 / AH = 2 Read Disk Sectors
-    mov al, 0x04             ; # Of Sectors To Read
-    int 0x13                 ; BIOS Interrupts For Disk Functions
+    mov ah, 0x02            ; BIOS INT 13 / AH = 2 Read Disk Sectors
+    mov al, 0x04            ; # Of Sectors To Read
+    int 0x13                ; BIOS Interrupts For Disk Functions
 
-    jc read_disk_2000        ; Retry If Disk Read Error
+    jc read_disk_2000       ; Retry If Disk Read Error
 
     ;; =====================================================
     ;; Reset Segment Registers For RAM
