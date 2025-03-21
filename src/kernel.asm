@@ -259,7 +259,7 @@ include 'commands/dir.asm'
 ;; =====================================================
 ;; Variables
 ;; =====================================================
-versionText:            db 0xA, 0xD, 0xA, 0xD, '  Microbit [Version 0.1.1-rc3]', 0xA, 0xD, 0
+versionText:            db 0xA, 0xD, 0xA, 0xD, '  Microbit [Version 0.1.1 Test Build 4]', 0xA, 0xD, 0
 welcomeText:            db '  Kernel Booted, Welcome To Microbit OS!', 0xA, 0xD, 0
 commandFailure:         db 0xA, 0xD, '  Command not found!', 0xA, 0xD, 0
 prompt:                 db 0xA, 0xD, '  > ', 0
