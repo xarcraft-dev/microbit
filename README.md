@@ -2,7 +2,15 @@
 
 This repository contains the code for the operating system that I'm developing called `Microbit`.
 
-The current version has a basic command prompt with a few commands like the file table command which is `F`. For full documentation and changelog, you can look at the releases.
+Firstly, thanks to Queso Fuego *(check out his Youtube channel!)* for making this project possible.
+
+The current latest pre-release has a lot of commands which are:
+- `dir` / **File Table**
+- `reboot` / **Reboot**
+- `reg` / **Print Register Values**
+- `gfx` / **Graphics Test**
+- `cls` / **Clear The Screen**
+- `hlt` / **End Program (Halt The CPU)**
 
 This is a picture of the main menu in latest release which is **0.1.0**.
 
