@@ -27,7 +27,7 @@ get_input:
     mov si, prompt          ; Print The Prompt Text
     call print_string
     xor cx, cx              ; Reset Byte Counter Of Input
-    mov si, commandString   ; SI Now Pointing To commandString
+    mov si, cmdString       ; SI Now Pointing To cmdString
 
     mov ax, 0x2000          ; Reset ES & DS Segments To Kernel Area
     mov es, ax
@@ -44,15 +44,15 @@ keyloop:
     int 0x10                ; Else Print Input Character To Screen
     mov [si], al            ; Store Input Character To String
     inc cx                  ; Increment Byte Counter of Input
-    inc si                  ; Go To Next Byte At DI / commandString
+    inc si                  ; Go To Next Byte At DI / cmdString
     jmp keyloop             ; Loop For Next Character From User
 
 run_command:
     cmp cx, 0
     je get_input            ; Handle Empty Input
 
-    mov byte [si], 0        ; Else Null Terminate commandString From DI
-    mov si, commandString   ; Reset SI To Point To Start Of User Input
+    mov byte [si], 0        ; Else Null Terminate cmdString From DI
+    mov si, cmdString       ; Reset SI To Point To Start Of User Input
 
 check_commands:
     push cx
@@ -63,35 +63,35 @@ check_commands:
     pop cx
     push cx
     mov di, cmdReboot
-    mov si, commandString
+    mov si, cmdString
     repe cmpsb
     je reboot
 
     pop cx
     push cx
     mov di, cmdReg
-    mov si, commandString
+    mov si, cmdString
     repe cmpsb
     je print_registers_command
 
     pop cx
     push cx
     mov di, cmdGfx
-    mov si, commandString
+    mov si, cmdString
     repe cmpsb
     je graphics_test
 
     pop cx
     push cx
     mov di, cmdHlt
-    mov si, commandString
+    mov si, cmdString
     repe cmpsb
     je end_program
 
     pop cx
     push cx
     mov di, cmdCls
-    mov si, commandString
+    mov si, cmdString
     repe cmpsb
     je clear_screen
 
@@ -102,7 +102,7 @@ check_files:
     mov es, ax
     xor bx, bx
 
-    mov si, commandString   ; Reset SI To Start Of User Input String
+    mov si, cmdString       ; Reset SI To Start Of User Input String
 
 check_next_char:
     mov al, [ES:BX]         ; Get File Table Char
@@ -111,6 +111,9 @@ check_next_char:
 
     cmp al, [si]            ; Does User Input Match File Table Character
     je start_compare
+
+    add bx, 16              ; If Not, Go To Next Entry in the File Table
+    jmp check_next_char
 
 start_compare:
     push bx                 ; Save File Table Location
@@ -127,7 +130,7 @@ compare_loop:
     jmp compare_loop
 
 restart_search:
-    mov si, commandString   ; Else, Reset To Start Of User Input
+    mov si, cmdString       ; Else, Reset To Start Of User Input
     pop bx                  ; Get The Saved File Table Position
     inc bx                  ; Go To Next Char In File Table
     jmp check_next_char     ; Start Checking Again
@@ -137,10 +140,19 @@ restart_search:
 ;; =============================================================================
 
 found_program:
+    ;; Get File Extension - Bytes 10-12 of File Table Entry
+    mov al, [ES:BX]
+    mov [file_ext], al
+    mov al, [ES:BX+1]
+    mov [file_ext+1], al
+    mov al, [ES:BX+2]
+    mov [file_ext+2], al
+
     add bx, 4               ; Go To Starting Sector # In File Table Entry
     mov cl, [ES:BX]         ; Sector Number To Start Reading At
     inc bx
     mov bl, [ES:BX]         ; File Size In Sectors / # Of Sectors To Read
+    mov byte [file_size], bl
 
     xor ax, ax
     mov dl, 0x00            ; Disk #
@@ -157,13 +169,23 @@ found_program:
     mov dl, 0x00            ; Drive #
 
     int 0x13
-    jnc program_loaded      ; Carry Flag Not Set, Success
+    jnc run_program         ; Carry Flag Not Set, Success
 
     mov si, pgmNotLoaded    ; Else Error, Program Did Not Load Correctly
     call print_string
     jmp get_input           ; Go Back To Prompt For Input
 
-program_loaded:
+run_program:
+    ;; Check File Extension In File Table Entry, if 'bin' / Binary, Then Far Jump & Run
+    ;; Else if 'txt', Then Print Content To Screen
+    mov cx, 3
+    mov si, file_ext
+    mov ax, 2000h           ; Reset ES to Kernel Space For Comparison (ES = DS)
+    mov es, ax              ; ES <- 0x2000
+    mov di, file_bin
+    repe cmpsb
+    je print_txt_file
+
     mov ax, 0x8000          ; Program Loaded, Set Segment Registers To Location
     mov ds, ax
     mov es, ax
@@ -171,6 +193,27 @@ program_loaded:
     mov gs, ax
     mov ss, ax
     jmp 0x8000:0x0000       ; Far Jump To Program
+
+print_txt_file:
+    mov ax, 8000h           ; Set ES Back To File Memory Location
+    mov es, ax              ; ES <- 0x8000
+    xor cx, cx
+    mov ah, 0Eh
+    ;; Get Size of Filesize in Bytes (512 Bytes Per Sector)
+    ;; TODO: File Size in Sectors is in Hex - Convert to Decimal!
+add_cx_size:
+    cmp byte [file_size], 0
+    je print_file_char
+    add cx, 512
+    dec byte [file_size]
+    jne add_cx_size
+
+print_file_char:
+    mov al, [ES:BX]
+    int 10h                 ; Print File Character to Screen
+    inc bx
+    loop print_file_char    ; Keep Printing Characters and Decrement CX Until 0
+    jmp get_input           ; After All Printed, Go Back To Prompt
 
 input_not_found:
     mov si, commandFailure  ; Command Not Found!
@@ -259,17 +302,17 @@ include 'commands/dir.asm'
 ;; =====================================================
 ;; Variables
 ;; =====================================================
-versionText:            db 0xA, 0xD, 0xA, 0xD, '  Microbit [Version 0.1.1 Test Build 4]', 0xA, 0xD, 0
+versionText:            db 0xA, 0xD, 0xA, 0xD, '  Microbit [Version 0.1.1-rc4]', 0xA, 0xD, 0
 welcomeText:            db '  Kernel Booted, Welcome To Microbit OS!', 0xA, 0xD, 0
-commandFailure:         db 0xA, 0xD, '  Command not found!', 0xA, 0xD, 0
+commandFailure:         db 0xA, 0xD, '  Command Not Found!', 0xA, 0xD, 0
 prompt:                 db 0xA, 0xD, '  > ', 0
-endProgramText:         db 0xA, 0xD, '  Ending Program...', 0
+endProgramText:         db 0xA, 0xD, '  Halting The CPU...', 0
 fileTableHeading:       db 0xA, 0xD, 0xA, 0xD, '  File Name   Extension   Entry #   Start Sector   Size (sectors)', \
                         0xA, 0xD, 0xA, 0xD, '  ', 0
 printRegisterHeading:   db 0xA, 0xD, 0xA, 0xD, '  Register Memory Location', 0xA, 0xD, 0
 goBackMessage:          db 0xA, 0xD, 0xA, 0xD, '  Press any key to go back...', 0
 programFailure:         db 0xA, 0xD, 0xA, 0xD, '  Program / File Not Found! Try again? (Y)', 0xA, 0xD, '  > ', 0
-pgmNotLoaded:           db 0xA, 0xD, 0xA, 0xD, '  Error! Program Not Loaded, Press Any Key To Try Again...', 0
+pgmNotLoaded:           db 0xA, 0xD, 0xA, 0xD, '  Error, Program Not Loaded!', 0
 
 cmdDir:                 db 'dir', 0
 cmdReboot:              db 'reboot', 0
@@ -277,10 +320,15 @@ cmdReg:                 db 'reg', 0
 cmdGfx:                 db 'gfx', 0
 cmdHlt:                 db 'hlt', 0
 cmdCls:                 db 'cls', 0
+cmdString:              db '', 0
 
-sectorNotFound:         db 0xA, 0xD, 0xA, 0xD, '  Error! Secor Number Not Found! Try Again? (Y)', 0xA, 0xD, '  > ', 0
+file_ext:               db '   ', 0
+file_size:              db 0
+file_bin:               db 'bin', 0
+file_txt:               db 'txt', 0
+
+sectorNotFound:         db 0xA, 0xD, 0xA, 0xD, '  Error! Secor Number Not Found!', 0xA, 0xD, '  > ', 0
 getProgramName:         db 0xA, 0xD, 0xA, 0xD, '  Enter Program Name: ', 0
-commandString:          db '', 0
 commandLength:          db 0
 
 ;; =====================================================

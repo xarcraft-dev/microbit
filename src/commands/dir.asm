@@ -60,7 +60,7 @@ start_sector_number:
     mov al, [ES:BX]
     call print_hex_as_ascii
 
-file_size:
+get_file_size:
     ;; 13 Blanks Before File Size
     mov cx, 14
     call print_blanks
