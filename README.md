@@ -11,6 +11,7 @@ The current latest pre-release has a lot of commands which are:
 - `gfx` / **Graphics Test**
 - `cls` / **Clear The Screen**
 - `hlt` / **End Program (Halt The CPU)**
+- `calculator` / **Simple Calculator Program**
 
 This is a picture of the main menu in latest release which is **0.1.0**.
 
